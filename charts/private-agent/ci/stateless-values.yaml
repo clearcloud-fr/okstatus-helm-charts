@@ -1,0 +1,6 @@
+# CI-only values — NOT real credentials. The chart refuses to render with
+# neither `credentials` nor `token` set, so CI needs one mode to exercise
+# `helm template` / kubeconform. Excluded from the packaged chart (.helmignore).
+credentials:
+  agentId: "ci-placeholder-agent-id"
+  agentSecret: "ci-placeholder-agent-secret"

@@ -1,0 +1,37 @@
+# OKS-602 — package every chart whose Chart.yaml version changed, publish a
+# GitHub release per chart and regenerate index.yaml on gh-pages. Enable
+# GitHub Pages on the gh-pages branch and set the custom domain
+# charts.okstatus.eu (CNAME record → clearcloud-fr.github.io).
+name: release
+on:
+  push:
+    branches: [main]
+    paths: ["charts/**"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Git identity
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - uses: azure/setup-helm@v4
+      - uses: helm/chart-releaser-action@v1
+        with:
+          charts_dir: charts
+          pages_branch: gh-pages
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Keep the custom domain on gh-pages
+        run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+          if [ ! -f CNAME ]; then
+            echo charts.okstatus.eu > CNAME
+            git add CNAME && git commit -m "chore: CNAME" && git push origin gh-pages
+          fi

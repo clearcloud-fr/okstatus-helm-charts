@@ -1,0 +1,30 @@
+OKStatus private agent deployed.
+
+It will appear on your Private Agents page within a few seconds
+(https://okstatus.eu/dashboard/private-agents).
+
+Check it:
+  kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -f
+
+{{- if or .Values.credentials.existingSecretName .Values.credentials.agentId }}
+
+Mode: stateless credentials{{ if .Values.credentials.existingSecretName }} (from Secret "{{ .Values.credentials.existingSecretName }}"){{ end }}. The pod loads its
+identity from a Secret and never enrolls — it survives any restart or
+reschedule, no volume needed.
+{{- else }}
+
+Mode: single-use token. On first boot the agent exchanges the token for
+per-agent credentials, kept on an emptyDir — it survives a container restart
+but a pod RESCHEDULE will need a rotated token.
+
+If the token was rejected, generate a new one from the dashboard
+(agent menu -> Rotate token) and upgrade:
+  helm upgrade {{ .Release.Name }} okstatus/private-agent --set token=<new token> --reuse-values
+
+Tip: switch to stateless mode to never need a fresh token again — set
+credentials.agentId / credentials.agentSecret, or credentials.existingSecretName.
+{{- end }}
+
+Note: this agent is single-instance by design (replicas: 1, Recreate). Running
+multiple pods with the same identity is not supported — deploy additional
+agents from the dashboard, each with its own credentials.

@@ -1,0 +1,67 @@
+# OKStatus private agent — customer-facing chart (OKS-401).
+#
+# Two ways to give the agent its identity — pick ONE:
+#
+# Two ways to give the agent its identity — pick ONE:
+#
+# 1. Stateless (recommended). Pre-provisioned credentials, no volume, no token.
+#    Either inline:
+#      helm install okstatus-agent okstatus/private-agent \
+#        --set credentials.agentId=<id> --set credentials.agentSecret=<secret>
+#    or point at a Secret you manage yourself (e.g. External Secrets):
+#      helm install okstatus-agent okstatus/private-agent \
+#        --set credentials.existingSecretName=okstatus-agent-creds
+#    Get the id/secret by enrolling once (Private Agents page → deploy snippet,
+#    or exchange a token via the docs). The pod loads them from the Secret and
+#    never enrolls, so it survives any restart/reschedule. Requires an agent
+#    image that supports OKSTATUS_AGENT_ID / OKSTATUS_AGENT_SECRET.
+#
+# 2. Legacy (single-use token). The agent exchanges the token on first boot;
+#    the credential lives on an emptyDir, so it survives a container restart but
+#    NOT a pod reschedule (which then needs a rotated token). Prefer mode 1.
+#      helm install okstatus-agent okstatus/private-agent --set token=oksa_live_xxx
+
+# -- Pre-provisioned credentials (recommended, stateless).
+credentials:
+  # Inline values — the chart creates the Secret for you. Leave empty if you
+  # provide existingSecretName instead.
+  agentId: ""
+  agentSecret: ""
+  # OR the name of a Secret you manage yourself (External Secrets, SOPS, …)
+  # holding keys `agentId` and `agentSecret`. Takes precedence over the inline
+  # values, and nothing sensitive then lives in your Helm values.
+  existingSecretName: ""
+
+# -- Legacy single-use enrollment token from the Private Agents page. Leave
+# empty when using `credentials`.
+token: ""
+
+# -- Agent name, shown on your OKStatus dashboard.
+name: "k8s-private-agent"
+
+# -- OKStatus endpoint the agent pulls its tasks from (outbound HTTPS only).
+aggregatorUrl: "https://backend.okstatus.eu"
+
+image:
+  # OKS-602 — public image, built by the okstatus-agent GitHub release
+  # workflow (linux/amd64 + linux/arm64).
+  repository: ghcr.io/clearcloud-fr/okstatus-agent
+  tag: ""  # defaults to appVersion
+  pullPolicy: IfNotPresent
+
+# -- How many checks the agent runs concurrently.
+maxConcurrentChecks: 50
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# -- Extra environment variables (e.g. HTTPS_PROXY for egress proxies).
+extraEnv: {}

@@ -1,0 +1,112 @@
+{{- $useCredentials := or .Values.credentials.existingSecretName .Values.credentials.agentId -}}
+{{- $credSecret := .Values.credentials.existingSecretName | default (printf "%s-credentials" (include "private-agent.fullname" .)) -}}
+{{- if and $useCredentials .Values.token }}
+{{- fail "private-agent: set EITHER credentials (agentId/agentSecret) OR token, not both." }}
+{{- end }}
+{{- if and (not $useCredentials) (not .Values.token) }}
+{{- fail "private-agent: set credentials.agentId + credentials.agentSecret (recommended, stateless) OR a single-use token." }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "private-agent.fullname" . }}
+  labels:
+    {{- include "private-agent.labels" . | nindent 4 }}
+spec:
+  # One replica by design: the agent's identity (its credentials) is a single
+  # instance. Running more than one pod with the same credentials makes them
+  # clobber each other's heartbeat and run duplicate checks — deploy additional
+  # agents from the dashboard (each gets its own identity), never via replicas.
+  replicas: 1
+  # Recreate, never RollingUpdate: maxSurge would briefly run the old and new
+  # pod together, doubling this agent's heartbeats/checks during a rollout.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: private-agent
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "private-agent.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: AGGREGATOR_URL
+              value: {{ .Values.aggregatorUrl | quote }}
+            - name: OKSTATUS_AGENT_NAME
+              value: {{ .Values.name | quote }}
+            - name: MAX_CONCURRENT_CHECKS
+              value: {{ .Values.maxConcurrentChecks | quote }}
+            {{- if $useCredentials }}
+            # Stateless mode: pre-provisioned credentials from a Secret. No
+            # enrollment token, no credentials file, no PVC.
+            - name: OKSTATUS_AGENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credSecret }}
+                  key: agentId
+            - name: OKSTATUS_AGENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credSecret }}
+                  key: agentSecret
+            {{- else }}
+            # Legacy mode: exchange the single-use token on first boot. The
+            # credentials file lives on an emptyDir (no PVC) — it survives a
+            # container restart but NOT a pod reschedule, so a rescheduled pod
+            # will need a rotated token. Use stateless credentials to avoid
+            # this entirely.
+            - name: OKSTATUS_CREDENTIALS_FILE
+              value: /var/lib/okstatus-agent/credentials.json
+            {{- end }}
+            {{- range $k, $v := .Values.extraEnv }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          {{- if and .Values.token (not $useCredentials) }}
+          envFrom:
+            - secretRef:
+                name: {{ include "private-agent.fullname" . }}-token
+          {{- end }}
+          {{- if not $useCredentials }}
+          volumeMounts:
+            - name: credentials
+              mountPath: /var/lib/okstatus-agent
+          {{- end }}
+          ports:
+            - name: health
+              containerPort: 9091
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      {{- if not $useCredentials }}
+      volumes:
+        - name: credentials
+          emptyDir: {}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

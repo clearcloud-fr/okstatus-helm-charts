@@ -1,0 +1,22 @@
+apiVersion: v2
+name: private-agent
+description: OKStatus private monitoring agent — runs inside your own cluster and monitors your private services. Outbound HTTPS only, no inbound port.
+type: application
+# 0.4.0 — removed the PVC entirely. Stateless credentials
+# (credentials.agentId/agentSecret, or credentials.existingSecretName for a
+# Secret you manage — e.g. External Secrets) are the primary path; legacy token
+# mode now keeps its credential on an emptyDir (survives container restart, not
+# a reschedule).
+version: 0.4.1
+# NOTE: stateless (credentials) mode requires an agent image that supports the
+# OKSTATUS_AGENT_ID / OKSTATUS_AGENT_SECRET env vars — bump appVersion to that
+# image once it's published. Legacy token mode works with 0.33.6.
+appVersion: "0.33.6"
+maintainers:
+  - name: OKStatus
+    url: https://okstatus.eu
+keywords:
+  - okstatus
+  - monitoring
+  - uptime
+  - private-agent

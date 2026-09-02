@@ -1,0 +1,3 @@
+# CI-only values — NOT a real token. Exercises the legacy single-use token
+# path (emptyDir credentials). Excluded from the packaged chart (.helmignore).
+token: "oksa_live_ci-placeholder-token"
