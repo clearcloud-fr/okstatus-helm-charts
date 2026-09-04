@@ -7,11 +7,12 @@ type: application
 # Secret you manage — e.g. External Secrets) are the primary path; legacy token
 # mode now keeps its credential on an emptyDir (survives container restart, not
 # a reschedule).
-version: 0.4.1
-# NOTE: stateless (credentials) mode requires an agent image that supports the
-# OKSTATUS_AGENT_ID / OKSTATUS_AGENT_SECRET env vars — bump appVersion to that
-# image once it's published. Legacy token mode works with 0.33.6.
-appVersion: "0.33.6"
+# 0.5.0 — appVersion moved to the first public agent release (1.0.0), the
+# image ghcr.io/clearcloud-fr/okstatus-agent now actually publishes.
+version: 0.5.0
+# Stateless (credentials) mode needs an agent that reads OKSTATUS_AGENT_ID /
+# OKSTATUS_AGENT_SECRET — 1.0.0 does. Legacy token mode also works.
+appVersion: "1.0.0"
 maintainers:
   - name: OKStatus
     url: https://okstatus.eu
