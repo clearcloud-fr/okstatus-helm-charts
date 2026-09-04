@@ -1,0 +1,23 @@
+apiVersion: v1
+entries:
+  private-agent:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-09-04T20:32:33.311616494Z"
+    description: OKStatus private monitoring agent — runs inside your own cluster
+      and monitors your private services. Outbound HTTPS only, no inbound port.
+    digest: ab5d8efe8afc261218ee812fba02c1ff12be7e1082c3c5c01b994318aa12c373
+    keywords:
+    - okstatus
+    - monitoring
+    - uptime
+    - private-agent
+    maintainers:
+    - name: OKStatus
+      url: https://okstatus.eu
+    name: private-agent
+    type: application
+    urls:
+    - https://github.com/clearcloud-fr/okstatus-helm-charts/releases/download/private-agent-0.5.0/private-agent-0.5.0.tgz
+    version: 0.5.0
+generated: "2026-09-04T20:32:33.311621724Z"
