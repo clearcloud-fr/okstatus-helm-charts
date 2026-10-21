@@ -31,6 +31,8 @@ spec:
       labels:
         {{- include "private-agent.labels" . | nindent 8 }}
     spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: agent
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -42,6 +44,10 @@ spec:
               value: {{ .Values.name | quote }}
             - name: MAX_CONCURRENT_CHECKS
               value: {{ .Values.maxConcurrentChecks | quote }}
+            {{- if .Values.allowCloudMetadata }}
+            - name: OKSTATUS_ALLOW_CLOUD_METADATA
+              value: "true"
+            {{- end }}
             {{- if $useCredentials }}
             # Stateless mode: pre-provisioned credentials from a Secret. No
             # enrollment token, no credentials file, no PVC.
@@ -90,9 +96,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
+            {{- toYaml .Values.securityContext | nindent 12 }}
       {{- if not $useCredentials }}
       volumes:
         - name: credentials

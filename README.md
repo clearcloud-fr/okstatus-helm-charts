@@ -21,6 +21,9 @@ helm install okstatus-agent okstatus/private-agent \
 Get the id/secret from **Dashboard → Private Agents → Add agent**. See
 [`charts/private-agent/values.yaml`](charts/private-agent/values.yaml) for
 every option (existing Secret, egress proxy, resources, tolerations…).
+From 0.6.0 the pod passes the Kubernetes `restricted` Pod Security Standard
+(non-root, seccomp `RuntimeDefault`, read-only root filesystem, no
+capabilities).
 
 Image: `ghcr.io/clearcloud-fr/okstatus-agent` — source and releases at
 [Clearcloud-Fr/okstatus-agent](https://github.com/Clearcloud-Fr/okstatus-agent).

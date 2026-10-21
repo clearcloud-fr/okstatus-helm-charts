@@ -2,8 +2,6 @@
 #
 # Two ways to give the agent its identity — pick ONE:
 #
-# Two ways to give the agent its identity — pick ONE:
-#
 # 1. Stateless (recommended). Pre-provisioned credentials, no volume, no token.
 #    Either inline:
 #      helm install okstatus-agent okstatus/private-agent \
@@ -51,6 +49,27 @@ image:
 
 # -- How many checks the agent runs concurrently.
 maxConcurrentChecks: 50
+
+# -- The agent can reach anything on your network except the cloud metadata
+# endpoints (169.254.169.254 and friends), so a monitor cannot read the
+# credentials of the node it runs on. Set true only to monitor that endpoint.
+allowCloudMetadata: false
+
+# -- Pod and container security contexts. The defaults pass the Kubernetes
+# "restricted" Pod Security Standard: the image runs as uid 1001, and the only
+# file the agent writes (token mode) lives on an emptyDir.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
 
 resources:
   requests:
